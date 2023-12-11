@@ -1,0 +1,217 @@
+---
+title: "Homework 1"
+format:
+  html: 
+    self-contained: true
+editor: visual
+---
+
+```{r}
+library(nycflights13)
+library(tidyverse)
+```
+
+# 5.2.4 Exercises
+
+## 1
+
+### 1.1
+
+```{r}
+filter(flights, arr_delay >= 120)
+```
+
+### 1.2
+
+```{r}
+filter(flights, dest %in% c("IAH", "HOU"))
+```
+
+### 1.3
+
+```{r}
+filter(flights, carrier %in% c("AA", "DL", "UA"))
+```
+
+### 1.4
+
+```{r}
+filter(flights, month %in% 7:9)
+```
+
+### 1.5
+
+```{r}
+filter(flights, arr_delay > 120 & dep_delay <= 0)
+```
+
+### 1.6
+
+```{r}
+filter(flights, dep_delay >= 60 & dep_delay - arr_delay > 30)
+```
+
+### 1.7
+
+```{r}
+filter(flights, dep_time <= 600 | dep_time == 2400)
+```
+
+## 2
+
+-   between() helps to simplify the statements of finding the specified interval
+
+### 5.1.4 with between()
+
+```{r}
+filter(flights, between(month,7,9))
+```
+
+## 3
+
+```{r}
+filter(flights, is.na(dep_time))
+```
+
+-   The output shows us the departure delay, arrival time and arrival delay times are also missing for these rows.
+-   The scheduled times are seen so that they may be cancelled flights.
+-   We can find the the number of missing values for variables with summary() function.
+
+```{r}
+summary(flights)
+```
+
+-   8255 flights have not got a dep_time.
+
+## 4
+
+```{r}
+NA^0
+```
+
+-   x\^0 always gives us 1.
+
+```{r}
+NA | TRUE
+```
+
+-   Anything OR TRUE is True. Even if anything is False.
+
+```{r}
+FALSE & NA
+```
+
+-   Anything AND False always give us False. Even if anything is True.
+
+-   It can not be generalized. These examples seems to show us we can reach a comprehensive solution, however it is not the case. Let's look at the example NA\*0.
+
+```{r}
+NA*0
+```
+
+-   When we multiply something with 0 it will equal 0. However, it is just valid for finite numbers. If we multiply infinity with 0 we can not reach defined result.
+
+```{r}
+Inf*0
+```
+
+-   So, we can't figure out a general rule with the operation using NA.
+
+# 5.3.1 Exercises
+
+## 2
+
+-   Most delayed flights
+
+```{r}
+arrange(flights, desc(dep_delay))
+```
+
+-   Flights that left earliest
+
+```{r}
+arrange(flights, dep_delay)
+```
+
+## 3
+
+```{r}
+arrange(flights, desc(distance/air_time))
+```
+
+## 4
+
+```{r}
+arrange(flights, desc(distance))
+```
+
+-   JFK to HNL flights are the farthest flights.
+
+```{r}
+arrange(flights, distance)
+```
+
+-   EWR to LGA flight is the shortest flights.
+
+# 5.6.7 Exercises
+
+## 5
+
+```{r}
+flights %>% 
+  group_by(carrier) %>%
+  summarise(mean_arr_delay = mean(arr_delay, na.rm = TRUE)) %>%
+  arrange(desc(mean_arr_delay))
+```
+
+```{r}
+flights %>% 
+  group_by(dest) %>%
+  summarise(mean_arr_delay = mean(arr_delay, na.rm = TRUE)) %>%
+  arrange(desc(mean_arr_delay))
+```
+
+```{r}
+flights %>% group_by(carrier, dest) %>% 
+  summarise(mean_arr_delay = mean(arr_delay, na.rm = TRUE), n = n()) %>%
+  arrange(desc(mean_arr_delay), desc(n)) %>%
+  filter(n > 10)
+```
+
+-   I try to eliminate the outliers by taking the number of flights less than 10.
+-   Just looking this table I can see that bad carriers has much more affect in the than bad airports.
+
+# 5.7.1 Exercises
+
+## 2
+
+-   I consider mean arrival delay as worst on-time record first. I try to eliminate the outliers so I removed the planes that has not 10 flights. Also, I filter the tibble to find the worst.
+
+```{r}
+flights %>% group_by(tailnum) %>% 
+  summarise(mean_arr_delay = mean(arr_delay, na.rm = TRUE), n = n()) %>%
+  arrange(desc(mean_arr_delay), desc(n)) %>%
+  filter(n > 10) %>%
+  filter(min_rank(desc(mean_arr_delay)) == 1)
+```
+
+-   It seem the N337AT plane has the worst record on time.
+-   I also want to find the flight that has most delay on arrival.
+
+```{r}
+select(flights, tailnum, arr_delay) %>%
+  arrange(flights, desc(arr_delay)) %>%
+  filter(min_rank(desc(arr_delay)) == 1)
+```
+
+-   The N384HA plane has the most delay time in single flight.
+
+## 3
+
+```{r}
+flights %>% group_by(hour) %>% 
+  summarise(mean_arr_delay = mean(arr_delay, na.rm = TRUE)) %>%
+  arrange(mean_arr_delay)
+```
+
+-   If the flight is earlier scheduled, we can expect that delay would be less. This can be predictable because there are less flights to affect the later flights in the morning flights. There are less flight before them that may delay them.
