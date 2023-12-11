@@ -1,4 +1,4 @@
-# R_Exercises
+# R Exercises
 Data analysis in R
 # Data Analysis Problem Examples Solution
 
