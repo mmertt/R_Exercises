@@ -4,7 +4,7 @@ Data analysis in R
 
 This repository contains solutions to data analysis problems from the "R for Data Science" and "Introduction to Statistical Learning with Applications in R (ISLR)" books. The solutions are provided in both QMD (R Markdown) and HTML formats.
 
-Data Transformation Files
+## Data Transformation Files
 R for Data Science
 Section 5.2.4, Exercises 1, 2, 3, first edition
 Section 5.3.1, Exercises 2, 3, 4, first edition
