@@ -11,4 +11,6 @@ Section 5.3.1, Exercises 2, 3, 4, first edition
 Section 5.6.7, Exercise 5, first edition
 Section 5.7.1, Exercises 2, 3, first edition
 
-
+## Data Visualisation Files
+ISLR v2
+Exercises 9 and 10 on pages 56-57 of ISLR 2e
