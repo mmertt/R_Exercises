@@ -1,0 +1,407 @@
+---
+title: "Homework 2"
+format:
+  html: 
+    self-contained: true
+editor: visual
+---
+## Mustafa Mert Türkmen 21902576
+```{r}
+#| include: false
+library(tidyverse)
+library(ISLR2)
+```
+
+```{r}
+data(Auto,package= "ISLR2")
+head(Auto)
+```
+
+```{r}
+str(Auto)
+```
+
+```{r}
+summary(Auto)
+```
+
+# 9
+
+## 9.a
+
+-   **Qualitative Data**: origin, name
+
+-   **Quantitative Data**: mpg, cylinders, displacement, horsepower, weight, acceleration, year
+
+## 9.b
+
+```{r}
+ranges <- sapply(Auto[,1:7], range)
+ranges
+```
+
+- In range function it gives us a vector containing min and max. First one defines min's and second the max's.
+
+## 9.c
+
+-   Means
+
+```{r}
+means <- sapply(Auto[,1:7], mean)
+means
+```
+
+-   Standard Deviations
+
+```{r}
+sdevs <- sapply(Auto[,1:7], sd)
+sdevs
+```
+
+## 9.d
+
+- I extract 10th to 85th with using combine function.
+
+```{r}
+autodata <- Auto[-c(10:85),]
+```
+
+-   Range
+
+```{r}
+reduced_ranges <- sapply(autodata[,1:7], range)
+reduced_ranges
+```
+
+-   Mean
+
+```{r}
+reduced_means <- sapply(autodata[,1:7], mean)
+reduced_means
+```
+
+-   Standard Deviation
+
+```{r}
+reduced_sdevs <- sapply(autodata[,1:7], sd)
+reduced_sdevs
+```
+
+## 9.e
+
+```{r}
+panel.hist <- function(x, ...)
+{
+    usr <- par("usr")
+    par(usr = c(usr[1:2], 0, 1.5) )
+    h <- hist(x, plot = FALSE)
+    breaks <- h$breaks; nB <- length(breaks)
+    y <- h$counts; y <- y/max(y)
+    rect(breaks[-nB], 0, breaks[-1], y, col = "cyan", ...)
+}
+panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor, ...)
+{
+    par(usr = c(0, 1, 0, 1))
+    r <- abs(cor(x, y))
+    txt <- format(c(r, 0.123456789), digits = digits)[1]
+    txt <- paste0(prefix, txt)
+    if(missing(cex.cor)) cex.cor <- 0.8/strwidth(txt)
+    text(0.5, 0.5, txt, cex = cex.cor * r)
+}
+pairs(Auto[,1:7], upper.panel = panel.smooth, lower.panel = panel.cor, 
+      diag.panel = panel.hist)
+```
+- Looking to pair plots and the correlation between them, I can state that there are linear relationships between some variables.
+
+- Looking at mpg and relation between other variables shows me there are strong negative relations with for example displacement, horsepower, and weight. There is also positive correlation which is between mpg and year.
+
+- The other variables have also strong positive and negative relations for instance horsepower and weight is positively correlated, and displacement has positive relation with horsepower and weight.
+
+- There might be other relation between variables, also there may be relations with their origins but finding them needs further investigation.
+
+## 9.f
+
+- We can suggest to predict mpg by looking the plots and the correlation.
+
+- Increasing displacement, horsepower and weight will reduce the mpg.
+
+- Newer models will have high mpg.
+
+```{r}
+res <- lm(formula = mpg ~ displacement + horsepower + weight + year, data = autodata)
+summary(res)
+```
+
+- Looking the linear model, I can say that there is a negative relation between mpg and weight, also there is a positive relation between mpg and year.
+
+- However I could not reject the null hypothesis that there is no relation between displacement and horsepower with mpg maybe looking them seperate give a inside info.
+
+```{r}
+res <- lm(formula = mpg ~ displacement + horsepower, data = autodata)
+summary(res)
+```
+
+- Looking both in different model that I can say there is negative relation between displacement and horsepower with mpg.
+
+# 10
+
+## 10.a
+
+
+```{r}
+#| include: false
+library(ISLR2)
+```
+
+
+```{r}
+#| include: false
+Boston
+```
+
+```{r}
+dim(Boston)
+```
+
+- 506 rows (suburbs)
+
+- 13 columns (predictors)
+
+crim
+per capita crime rate by town.
+
+zn
+proportion of residential land zoned for lots over 25,000 sq.ft.
+
+indus
+proportion of non-retail business acres per town.
+
+chas
+Charles River dummy variable (= 1 if tract bounds river; 0 otherwise).
+
+nox
+nitrogen oxides concentration (parts per 10 million).
+
+rm
+average number of rooms per dwelling.
+
+age
+proportion of owner-occupied units built prior to 1940.
+
+dis
+weighted mean of distances to five Boston employment centres.
+
+rad
+index of accessibility to radial highways.
+
+tax
+full-value property-tax rate per $10,000.
+
+ptratio
+pupil-teacher ratio by town.
+
+lstat
+lower status of the population (percent).
+
+medv
+median value of owner-occupied homes in $1000s.
+
+## 10.b
+
+```{r}
+panel.hist <- function(x, ...)
+{
+    usr <- par("usr")
+    par(usr = c(usr[1:2], 0, 1.5) )
+    h <- hist(x, plot = FALSE)
+    breaks <- h$breaks; nB <- length(breaks)
+    y <- h$counts; y <- y/max(y)
+    rect(breaks[-nB], 0, breaks[-1], y, col = "cyan", ...)
+}
+panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor, ...)
+{
+    par(usr = c(0, 1, 0, 1))
+    r <- abs(cor(x, y))
+    txt <- format(c(r, 0.123456789), digits = digits)[1]
+    txt <- paste0(prefix, txt)
+    if(missing(cex.cor)) cex.cor <- 0.8/strwidth(txt)
+    text(0.5, 0.5, txt, cex = cex.cor * r)
+}
+pairs(Boston[,], upper.panel = panel.smooth, lower.panel = panel.cor, 
+      diag.panel = panel.hist)
+
+```
+- It is hard to see the pairwise relations between them. However I see some correlation value and pairwise scatterplots to deeply look.
+
+```{r}
+pairs(~crim+rad+tax, data = Boston)
+```
+- Just looking I can say crim has may be positive relation with rad and tax however it show to me as a not strong.
+
+```{r}
+pairs(~crim+medv+dis, data = Boston)
+```
+
+- There might be negative relation with crim of both medv and dis.
+- Dis and medv might have positive relation.
+
+
+
+```{r}
+pairs(~crim+rad+tax, data = Boston)
+```
+- Crim might have positive relation with rad and tax.
+- Rad and tax has a positive relation.
+
+## 10.c
+
+```{r}
+cor(Boston[1], Boston[-1])
+```
+- crim has a negative relationship with medv and dis.
+- crim has a positive relationship with indus, nox, rad and tax.
+- They are not strong relations.
+
+## 10.d
+
+```{r}
+Boston %>%
+  ggplot(aes(crim)) +
+  geom_boxplot()
+```
+- We can say that most suburbs have a crime rate at 0 or close to it. However, there are som suburbs that have high crime rates.
+
+```{r}
+summary(Boston$crim)
+```
+- The range is wide, it is between 0 to 89.
+
+```{r}
+sd(Boston$crim)
+```
+```{r}
+Boston %>%
+  ggplot(aes(tax)) +
+  geom_boxplot()
+```
+- May be seeing it in histogram may give us better understand.
+
+```{r}
+ggplot(Boston, aes(x = tax)) + 
+  geom_histogram(binwidth = 10) +
+  labs(title = "Tax - Histogram", 
+       x = "Tax", 
+       y = "Count")
+```
+
+- There are so many suburbs with high and same tax values.
+
+```{r}
+summary(Boston$tax)
+```
+- Range is again wide but not as much as crime rate I thinks based on percentage.
+
+```{r}
+Boston %>%
+  ggplot(aes(ptratio)) +
+  geom_boxplot()
+```
+```{r}
+summary(Boston$ptratio)
+```
+- The range is narrow. 
+
+```{r}
+ggplot(Boston, aes(x = ptratio)) + 
+  geom_histogram(binwidth = 0.2) +
+  labs(title = "ptratio - Histogram", 
+       x = "ptratio", 
+       y = "Count")
+```
+
+- There are so many observation in the same value just like tax rates.
+
+- I think the ptratio and tax rate may have relation so lets check.
+
+```{r}
+Boston %>%
+  group_by(ptratio, tax) %>%
+  count() %>%
+  arrange(desc(n))
+```
+
+- Just like I thought there are 132 suburbs which has same ptratio and tax ratio. Thats interesting to observe.
+
+## 10.e
+
+- Recall;
+chas
+Charles River dummy variable (= 1 if tract bounds river; 0 otherwise).
+
+```{r}
+sum(Boston$chas==1)
+```
+
+- 35 suburbs bound the Charles River.
+
+## 10.f
+
+```{r}
+summary(Boston$ptratio)
+```
+- Median is equal to 19.05
+
+## 10.g
+
+```{r}
+which(Boston$medv == min(Boston$medv))
+```
+- 399 and 406 have the lowest median value of properties.
+
+```{r}
+Boston[c(399,406),]
+```
+- Understanding from there is hard, but I can comment of some predictors.
+
+- Crime rates are high, 406 has more crime rates than 399.
+
+- They have same ptratio and tax rate which is common for other suburbs.
+
+- They are not near to Charles river they have 0 in chas.
+
+```{r}
+summary(Boston)
+```
+- They are close to Boston employment centers.
+
+- They have lower status of population.
+
+## 10.h
+```{r}
+sum(Boston$rm >7)
+```
+
+- 64 census tract has more than 7 avg. no. of rooms per dwelling.
+
+```{r}
+sum(Boston$rm >8)
+```
+
+- 13 census tract has more than 8 avg. no. of rooms per dwelling.
+
+
+```{r}
+summary(Boston)
+```
+```{r}
+summary(subset(Boston, rm>8))
+```
+- They have low crime rates.
+
+- They have higher median value of owner-occupied homes.
+
+- They have relatively less lower status of the population.
+
+- They have relatively close to employment centers.
+
+
