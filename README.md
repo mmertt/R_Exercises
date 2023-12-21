@@ -14,3 +14,8 @@ Section 5.7.1, Exercises 2, 3, first edition
 ## Data Visualisation Files
 ISLR v2
 Exercises 9 and 10 on pages 56-57 of ISLR 2e
+
+## Linear Regression Files
+ISLR v2
+Exercises 4 and 8 in Section 3.7,
+Exercise 8 in Section 5.4.
