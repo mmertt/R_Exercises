@@ -1,0 +1,244 @@
+---
+title: "Homework 4"
+format: 
+  html:
+    embed-resources: true
+    toc: true
+---
+
+## Mustafa Mert Türkmen 21902576
+
+# Exercises 3.7
+
+# 10
+
+```{r}
+#| include: false
+library(ISLR2)
+Carseats
+```
+
+## 10.a
+
+```{r}
+model <- lm(Sales ~ Price + Urban + US, data= Carseats)
+summary(model)
+```
+
+## 10.b
+
+-   Price: There is a negative linear relationship between sales and price with given p-value and t-value. If price is increasing, the sales are decreasing.
+
+-   UrbanYes: P value is so high and t-value is so low, so we can say that there isn't a relationship between the location and sales amount.
+
+-   USYes: P-value is low and t-value is bigger than 3. The coefficient is equal 1.2. So, there is a relationship being on sale in USA positively effect the sales amount.
+
+## 10.c
+
+$$Sales = 13.04\ + -0.05 * Price \ + -0.02 * Urban \ + 1.20 * US$$
+- Where:
+ -- Urban = 1 for a store in an urban location, else 0
+ -- US = 1 for a store in the US, else 0
+
+
+## 10.d
+
+- For Price and US, we can reject the null hypothesis based on the result on t-test. However, there is not enough evidence to reject the null hypothesis on Urban predictor, its coefficient still can be equal to zero. 
+
+## 10.e
+
+```{r}
+smaller_model <- lm(Sales ~ Price + US, data= Carseats)
+summary(smaller_model)
+```
+
+## 10.f
+
+- In the model A we have Multiple R-squared:  0.2393,	Adjusted R-squared:  0.2335 
+- In the model E we have Multiple R-squared:  0.2393,	Adjusted R-squared:  0.2354 
+- F-statistic value is increased on model E against A.
+- So, we can say that both models can explain ~23.9% of the variance in the Sales.
+- RSE is decreasing in the model E with eliminating the variable Urban.
+- Model E can slightly better in fitting the data.
+
+## 10.g
+
+```{r}
+confint(smaller_model)
+```
+- In the confint function the default value of confidence level is equal to 95%.
+
+-We can say that there is a 95% probability that the true parameter for Price falls interval: (-0.0648, -0.0442), and a 5% probability that it doesn’t.
+
+## 10.h
+
+```{r}
+par(mfrow=c(2,2))
+plot(smaller_model)
+```
+- We can say that potential outliers' standardized residuals outside of [−2,2].
+- There are a few observation exceed on leverage statistic plot. 
+- These points have high leverage.
+
+
+
+# 15
+```{r}
+#| include: false
+Boston
+```
+
+## 15.a
+
+
+```{r}
+lm.zn = lm(crim~zn, data=Boston)
+summary(lm.zn) # yes
+```
+```{r}
+lm.indus = lm(crim~indus, data=Boston)
+summary(lm.indus) # yes
+```
+```{r}
+lm.chas = lm(crim~chas, data=Boston) 
+summary(lm.chas) # no
+```
+```{r}
+lm.nox = lm(crim~nox, data=Boston)
+summary(lm.nox) # yes
+```
+```{r}
+lm.rm = lm(crim~rm, data=Boston)
+summary(lm.rm) # yes
+```
+```{r}
+lm.age = lm(crim~age, data=Boston)
+summary(lm.age) # yes
+```
+```{r}
+lm.dis = lm(crim~dis, data=Boston)
+summary(lm.dis) # yes
+```
+```{r}
+lm.rad = lm(crim~rad, data=Boston)
+summary(lm.rad) # yes
+```
+```{r}
+lm.tax = lm(crim~tax, data=Boston)
+summary(lm.tax) # yes
+```
+```{r}
+lm.ptratio = lm(crim~ptratio, data=Boston)
+summary(lm.ptratio) # yes
+```
+```{r}
+lm.lstat = lm(crim~lstat, data=Boston)
+summary(lm.lstat) # yes
+```
+```{r}
+lm.medv = lm(crim~medv, data=Boston)
+summary(lm.medv) # yes
+```
+
+- All variables relations with crim, except chas.
+
+- Looking plot for an example to see the relation.
+
+```{r}
+par(mfrow=c(2,2))
+plot(lm.medv)
+```
+- Some outliers can occurs but we can reject the hypothesis that their coefficients is equal 0 in the confidence interval at 95%, crime rate with relation of all variables except chas.
+
+## 15.b
+
+```{r}
+lm.all = lm(crim~., data=Boston)
+summary(lm.all)
+```
+- We can reject the null hypothesis at 5% level for zn, dis, rad and mev predictors. There are some predictors which is nox and lstat might have not zero coefficient but their p-values is not less than 5 percent. So, we can guarantee that their coefficient is not equal to zero.
+
+## 15.c
+
+```{r}
+x = c(coefficients(lm.zn)[2],
+      coefficients(lm.indus)[2],
+      coefficients(lm.chas)[2],
+      coefficients(lm.nox)[2],
+      coefficients(lm.rm)[2],
+      coefficients(lm.age)[2],
+      coefficients(lm.dis)[2],
+      coefficients(lm.rad)[2],
+      coefficients(lm.tax)[2],
+      coefficients(lm.ptratio)[2],
+      coefficients(lm.lstat)[2],
+      coefficients(lm.medv)[2])
+y = coefficients(lm.all)[2:13]
+plot(x, y, xlab="Simple Regression Coefficients", ylab="Multiple Regression Coefficients")
+```
+- There is one outlier, let's find out.
+```{r}
+x
+```
+
+- Coefficient nox is approximately -10 in linear model and 31 in multiple regression model.
+
+- However, in general their coefficients in linear and multiple regression model is close to each other.
+
+## 15.d 
+
+```{r}
+lm.zn3 = lm(crim~poly(zn,3), data=Boston)
+summary(lm.zn3) # 1, 2
+```
+```{r}
+lm.indus3 = lm(crim~poly(indus,3), data=Boston)
+summary(lm.indus3) # 1, 2, 3
+```
+
+- lm.chas3 = lm(crim~poly(chas,3), data=Boston) # qualitative predictor
+  
+
+```{r}
+lm.nox3 = lm(crim~poly(nox,3), data=Boston)
+summary(lm.nox3) # 1, 2, 3
+```
+```{r}
+lm.rm3 = lm(crim~poly(rm,3), data=Boston)
+summary(lm.rm3) # 1, 2
+```
+```{r}
+lm.age3 = lm(crim~poly(age,3), data=Boston)
+summary(lm.age3) # 1, 2, 3
+```
+```{r}
+lm.dis3 = lm(crim~poly(dis,3), data=Boston)
+summary(lm.dis3) # 1, 2, 3
+```
+```{r}
+lm.rad3 = lm(crim~poly(rad,3), data=Boston)
+summary(lm.rad3) # 1, 2
+```
+```{r}
+lm.tax3 = lm(crim~poly(tax,3), data=Boston)
+summary(lm.tax3) # 1, 2
+```
+```{r}
+lm.ptratio3 = lm(crim~poly(ptratio,3), data=Boston)
+summary(lm.ptratio3) # 1, 2, 3
+```
+```{r}
+lm.lstat3 = lm(crim~poly(lstat,3), data=Boston)
+summary(lm.lstat3) # 1, 2
+```
+```{r}
+lm.medv3 = lm(crim~poly(medv,3), data=Boston)
+summary(lm.medv3) # 1, 2, 3
+```
+- In chas, it is qualitative predictor, so we can not create model.
+- The degree 1 coefficients are all statistically significant - as we found earlier.
+- The degree 2 coefficients for zn, indus, nox, rm, age, dis, rad, tax, ptratio, lstat and medv are statistically significant. 
+- The degree 3 coefficients of medv, dis, age, nox, ptratio and indus are statistically significant.
+- So, we can say that there is evidence of a non-linear relationship (quadratic or cubic) for all variables except chas.
+
+
