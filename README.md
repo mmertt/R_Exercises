@@ -19,3 +19,7 @@ Exercises 9 and 10 on pages 56-57 of ISLR 2e
 ISLR v2
 Exercises 4 and 8 in Section 3.7,
 Exercise 8 in Section 5.4.
+
+## Multiple Regression Files 
+ISLR v2 
+Problems 10 and 15 in Section 3.7
