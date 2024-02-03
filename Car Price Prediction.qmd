@@ -1,0 +1,241 @@
+---
+title: "IE 451 Fall 2023-2024 Homework 5"
+author: "Mustafa Mert Türkmen"
+format: 
+  html:
+    embed-resources: true
+    toc: true
+---
+
+
+```{r}
+#| include: false
+library(magrittr)
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(ISLR2)
+library(ggplot2)
+library(GLMsData)
+library(GGally)
+library(car)
+library(faraway)
+library(pander)
+```
+
+# 1
+
+```{r}
+d <- read_csv("used-cars.csv")
+```
+
+
+```{r}
+#| message: false
+data <- select(d,c('Price', 'Age_08_04', 'KM', 'Fuel_Type', 'HP', 'Met_Color', 
+                   'Automatic', 'CC', 'Doors', 'Quarterly_Tax', 'Weight'))
+```
+- I explored the variables and found that Fuel Type is qualitative data.
+
+- I will deeply looked at each variables plot with prices.
+
+```{r}
+ggplot(data,aes(x=Age_08_04,y=Price)) + geom_point() + geom_smooth()
+```
+- When age increases the price of car decreases so there is negative correlation.
+
+```{r}
+ggplot(data,aes(x=KM,y=Price)) + geom_point() + geom_smooth()
+```
+- There is similar relation between price and KM like price-Age, when km increases, price decreases.
+
+```{r}
+ggplot(data,aes(x=Fuel_Type,y=Price)) + geom_boxplot()
+```
+- Diesel has more wider data range in the price, petrol's mean is the most expensive among this three. CNG has narrowly distributed in price.
+
+```{r}
+data %>%
+  ggplot(aes(x=HP,y=Price)) + geom_boxplot(aes(group=HP)) 
+```
+- The HP values are district, and just looking this plot I can say that there may be relation between price and HP values.
+
+
+```{r}
+data %>%
+  ggplot(aes(x=Met_Color,y=Price)) + geom_boxplot(aes(group=Met_Color)) 
+```
+
+- It is hard to comment about metalic color has effect on price.
+
+```{r}
+data %>%
+  ggplot(aes(x=Automatic,y=Price)) + geom_boxplot(aes(group=Automatic)) 
+```
+
+- The effect of being automatic or non automatic has similar effect on price. However, there much more nonautomatic cars as expensive than automatic cars.
+
+```{r}
+data %>% filter(CC<=4000) %>%
+  ggplot(aes(x=CC,y=Price)) + geom_boxplot(aes(group=HP))  
+```
+- At first I try to observe data with including each vehicle. However, there is one vehicle who has cc more than 10000, so I filter the data for better observing. This outlier CC value is a mistake I guess.
+
+```{r}
+data %>%
+  ggplot(aes(x=Doors,y=Price)) + geom_boxplot(aes(group=Doors))
+```
+
+- More doors will have higher price may be said.
+
+```{r}
+data %>%
+  ggplot(aes(x=Quarterly_Tax,y=Price)) + geom_boxplot(aes(group=Quarterly_Tax))
+```
+
+- This data is hard to interpret with just looking plot. I guess quarterly tax may effect the price of cars.
+
+```{r}
+data %>%
+  ggplot(aes(x=Weight,y=Price)) + geom_point()
+```
+
+
+- I think there might be also relation between weight and price.
+
+## 2
+
+```{r}
+mlm <- lm(data=data, Price ~.)
+summary(mlm)
+```
+
+## 3
+- The summary of my model shows that age, and km has negative relation between price. Their p values are under 5 percent. 
+
+- Quarterly tax, HP and weight has positive relation with price. Their p values are under 5 percent.
+
+- Fuel Type data also have a relation. If the type of it petrol it has positively correlated with price. If it is CNG, it has negative relation with this proposed model.
+
+## 4
+
+```{r}
+#| layout-ncol: 2
+#| fig-cap: Diagnostic plots
+#| fig-subcap: 
+#| - ""
+#| - ""
+#| - ""
+#| - ""
+#| label: fig-carseats-diag
+plot(mlm, which = 1, col="darkgray", lwd=2, cex=1.5, cex.axis=1.5, cex.lab = 1.5, cex.id = 1.5, cex.caption = 1.5)
+plot(mlm, which = 2, id.n = 3, col="darkgray", 
+     lwd=2, cex=1.5, cex.axis=1.5, cex.lab = 1.5, cex.id = 1.5, cex.caption = 1.5)
+abline(h=c(-3,-2,2,3), lty = "dotted")
+plot(mlm, which = c(3,5), id.n=3, col="darkgray", lwd=2, cex=1.5, cex.axis=1.5, cex.lab = 1.5, cex.id = 1.5, cex.caption = 1.5)
+abline(h = c(-3, -2 , 2, 3), # 5% and 0.1% of all cases are expected to be outside (-2,2) and (-3,3) bounds, respectively. If you observe more, then we may have y-outliers.
+       v = c(2,3)*(1 - df.residual(mlm)/nobs(mlm)), lty = "dotted")
+```
+- a. Smoother curve looks like a wide parabola. It shows me there might be a problem with my regression model about being not satisfactory.
+- b.  points are aligned along the straight line: residuals seem to normally distributed. However there are lots of outliers.
+- c.  Smoother does not seems like constant, so my error variance is not constant.
+- d.  There are points who have large Cook's distance. There are lots of high leverage points, so they also are influential on regression coefficient estimates, they have inflate the residual standard error will high, so it cause confidence and prediction intervals.
+- Overall the model does not seems good with investigating the diagnostic plots.
+
+## 5
+
+- Age, KM, Fuel_Type, HP, Quarterly Tax and Weight predictors are significant.
+
+## 6
+
+- It decreases the price -1.346.
+
+## 7
+
+- So, with this question I try to create a better model. I will eliminate the unnecessary predictors and also create a relation between age and fuel type on affects of price.
+
+- First, I try to plot the relation of these three.
+
+```{r}
+ggplot(data, aes(y=Price, x=Age_08_04)) + geom_point(aes(color=Fuel_Type))
+```
+- With looking these plot, I can say that all relations between price and age-fuel type are negative, but their coefficients might be different.
+
+
+- In the fifth question I was aware of the significant predictors, so I am going to use them and after that also add relation to fuel type and age.
+
+```{r}
+mlm2 <- lm(data=data, Price ~ KM + HP + Quarterly_Tax + Weight + Age_08_04 + Fuel_Type)
+summary(mlm2)
+```
+```{r}
+anova(mlm2)
+```
+
+- Now my model results are more reliable to look at because all predictors p-values under five percent and t-test values are not between 3 and -3.
+- Let's include interaction terms between age and fuel type in the model, if their coefficient is significant it suggests us to add that the relationship between car age and price differs for different fuel types.
+- Our the null hypothesis (H0) can be formulated as follows:
+
+- H0: The interaction effect between age and fuel type is not statistically significant, indicating that there is no difference in how car price changes with age for different fuel types.
+The alternative hypothesis (Ha) can be stated as:
+- Ha: The interaction effect between age and fuel type is statistically significant, indicating that there is a difference in how car price changes with age for different fuel types.
+
+- So lets create a model to deeper look.
+```{r}
+mlm3 <- lm(data=data, Price ~ KM + HP + Quarterly_Tax + Weight + Age_08_04 + Fuel_Type + Age_08_04:Fuel_Type)
+summary(mlm3)
+```
+```{r}
+anova(mlm3)
+```
+- So, with the last created model we could not reject the null hypothesis that F-test and t-test scores are not appropriate. P-value is not below the 0.05 so there is not enough evidence to reject it.
+- With last created model, the expected car price change in response to change in age be different for different fuel types has not enough evidence. 
+
+## 8 
+
+- In my last proposed model which is mlm2, I did not add the unnecessary features to my model so they will not have any effect.
+- So, when the price predicts, I will not specify their values.
+- For the finding the the most frequent categories for the categorical predictors I write a function.
+- I assume that HP and Quarterly Tax predictors are also categorical because there are some values which they take.
+
+```{r}
+getmode <- function(v) {
+  uniqv <- unique(v)
+  uniqv[which.max(tabulate(match(v, uniqv)))]
+}
+predicted_data <- tibble(KM = mean(data$KM), Age_08_04 = mean(data$Age_08_04), 
+                         HP = getmode(data$HP), Quarterly_Tax = getmode(data$Quarterly_Tax),
+                         Fuel_Type = getmode(data$Fuel_Type), Weight = mean(data$Weight))
+predict(mlm2, level = 0.8, newdata = predicted_data)
+```
+- It predicted as €11,113.61 in the 80% confidence interval
+
+- So, to compare it with first model I will also predict first model with all features means.
+
+```{r}
+predicted_data2 <- tibble(KM = mean(data$KM), Age_08_04 = mean(data$Age_08_04), 
+                         HP = getmode(data$HP), Quarterly_Tax = getmode(data$Quarterly_Tax),
+                         Fuel_Type = getmode(data$Fuel_Type), Weight = mean(data$Weight),
+                         Met_Color = getmode(data$Met_Color), Automatic = getmode(data$Automatic),
+                         Doors = getmode(data$Doors), CC = getmode(data$CC))
+predict(mlm, level = 0.8, newdata = predicted_data2)
+```
+- My first model predicts its €11,056.21 in the 80% confidence interval.
+
+- Their predictions are close to each other. Let's find a car in our dataset which have similar specifications.
+
+```{r}
+data2 <- data %>% filter(HP == getmode(data$HP), Quarterly_Tax == getmode(data$Quarterly_Tax),
+                         Fuel_Type == getmode(data$Fuel_Type), Met_Color == getmode(data$Met_Color),
+                         Automatic == getmode(data$Automatic), Doors == getmode(data$Doors),
+                         CC == getmode(data$CC), Age_08_04 == round(mean(data$Age_08_04)))
+
+data2
+```
+
+```{r}
+mean(data$Weight) 
+mean(data$KM)
+```
+- So, with looking the similar cars who had similar specifications, our price prediction is good enough for both models.
+
