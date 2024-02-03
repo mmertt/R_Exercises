@@ -26,4 +26,5 @@ Problems 10 and 15 in Section 3.7
 
 ## Car Price Prediction and used-cars Files
 Multiple regression model that predicts the used-car prices
+
 ![image](https://github.com/mmertt/R_Exercises/assets/66298734/d3ea313e-2421-4695-aa18-bde0aa2a9afb)
