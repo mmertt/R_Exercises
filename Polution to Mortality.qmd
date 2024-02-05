@@ -1,0 +1,350 @@
+---
+title: "IE 451 Fall 2023-2024 Homework 6"
+author: "Mustafa Mert Türkmen"
+format: 
+  html:
+    embed-resources: true
+    toc: true
+---
+
+```{r}
+#| include: false
+library(magrittr)
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(ISLR2)
+library(ggplot2)
+library(GLMsData)
+library(GGally)
+library(car)
+library(faraway)
+library(pander)
+library(leaps)
+library(effects)
+```
+
+# 1
+
+```{r}
+d <- read_csv("pollution.csv")
+```
+
+```{r}
+my_fn <- function(data, mapping, method="loess", ...){
+      p <- ggplot(data = data, mapping = mapping) + 
+      geom_point() + 
+      geom_smooth(formula = y ~ x,method=method,se=F, ...)
+      p
+}
+
+d[-1] %>% 
+  relocate(Mort)%>% 
+  ggpairs(progress = FALSE,
+          upper = list(continuous = my_fn),
+          lower = list(continuous = "cor"))+theme(axis.text.x = element_text(angle = 90))
+```
+- With looking there I think there are interpretable relations between predictors and our response variable.
+- Mort has negative relation with edu, hum and inc with looking their correlation values.
+- Positive correlation with the rest, some of the relations looking like significant.
+
+- Let's look at their plots one by one to make comment about their relation with our response variable mortality.
+
+
+```{r}
+ggplot(d,aes(x=Edu,y=Mort)) + geom_point() + geom_smooth()
+```
+- There are at least three outliers, but there is negative relation between them.
+
+```{r}
+ggplot(d,aes(x=Nwt,y=Mort)) + geom_point() + geom_smooth()
+```
+- There is positive correlation between Nwt and Mort.
+
+```{r}
+ggplot(d,aes(x=Jant,y=Mort)) + geom_point() + geom_smooth()
+```
+- There is possible positive relation between them. There are at least 2 outlier city.
+
+```{r}
+ggplot(d,aes(x=Rain,y=Mort)) + geom_point() + geom_smooth()
+```
+
+- There is positive correlation between them.
+
+```{r}
+ggplot(d,aes(x=Nox,y=Mort)) + geom_point() + geom_smooth()
+```
+- There is positive correlation between the air pollutant nitrous oxide and mortality. If nitrous oxide is increasing mortality is increasing.
+
+```{r}
+ggplot(d,aes(x=Hum,y=Mort)) + geom_point() + geom_smooth()
+```
+- Interpret this Hum data with our response variable Mort is hard by just looking this graph. There are just 56 city in data so maybe adding new data may create possible relations. I try to deeply look by looking Cook's distances.
+
+
+```{r}
+ggplot(d,aes(x=Inc,y=Mort)) + geom_point() + geom_smooth()
+```
+
+- There might be negative correlation but there are lots of outliers.
+
+- So lets create a multiple linear regression model, after that I will eliminate the some of the predictors to fit the best linear model.
+- I did not want to add city data, it is just representing the where this data is taken from.
+```{r}
+d0 <- d %>% 
+  select(-City)
+```
+
+```{r}
+first_model <- lm(Mort ~ ., data = d0)
+summary(first_model)
+```
+```{r}
+plot(first_model)
+```
+```{r}
+influencePlot(first_model)
+```
+```{r}
+cook1 <- cooks.distance(first_model)
+plot(cook1)
+abline(h = 4*mean(cook1, na.rm=T), col="red")
+text(x=1:length(cook1)+1, y=cook1, labels=ifelse(cook1>4*mean(cook1, na.rm=T),names(cook1),""), col="red")
+```
+```{r}
+outliers0 <- as.numeric(names(cook1)[(cook1 > 4*mean(cook1, na.rm=T))])  # outlier row numbers
+head(d0[outliers0, ])  # outlier observations.
+```
+```{r}
+d1 <- d0 %>% slice(-c(26, 34, 55))
+d1
+```
+
+```{r}
+second_model <- lm(Mort ~ ., data = d1)
+summary(second_model)
+```
+
+- Hum and Inc seem to be not significant to the model. Let’s put them out.
+
+```{r}
+third_model <- lm(Mort ~ . - Hum - Inc, data = d1)
+summary(third_model)
+```
+
+```{r}
+influencePlot(third_model)
+```
+
+- There are still some outliers but our number of data is not much so I don't want to slice them it may cause to overfit. So let's moving.
+
+```{r}
+residualPlots(third_model)
+```
+- Tukey test and last figure suggest that the model has room for improvement.
+
+- Let’s check if the data needs a transformation.
+
+```{r}
+res_pt <-
+  powerTransform(cbind(Mort, Edu, Nwt, Jant, Rain, Nox) ~
+                   1,
+                 d1)
+summary(res_pt)
+```
+- We reject the null hypothesis that the data does not need any transformation. 
+
+```{r}
+mort_transform <- bcPower(dplyr::select(d1,Mort,Edu,Nwt,Jant,Rain,Nox), lambda=coef(res_pt,round = TRUE))%>% 
+  set_names(c("Mort","Edu","nwt^0.5","Jant","Rain","logNox"))
+
+
+mort_transform %>%
+  relocate(Mort) %>%
+  ggpairs(progress = FALSE,
+          upper = list(continuous = my_fn),
+          lower = list(continuous = "cor"))+theme(axis.text.x = element_text(angle = 90))
+```
+# 2
+```{r}
+fourth_model <- 
+  lm(
+    Mort ~ Edu + I(Nwt^0.5) + Jant + Rain + log(Nox),
+    d1
+  )
+summary(fourth_model)
+```
+- At our first model we have RSE: 35.48, Multiple R-squared:  0.7137,	Adjusted R-squared:  0.6719
+- Now we have less RSE, and also Multiple R-squared:  0.8071,	Adjusted R-squared:  0.7865. We improved our model.
+
+# 3
+- The Adjusted R2 value is 0.7865 So this proportion of the variance can be explained by this model.
+
+- Let's also check the diagnostic plots.
+
+```{r}
+plot(fourth_model)
+```
+- Fitted vs Residuals plot has a better shape than the previous model. The red curve is around 0. But still somehow has a downside U kind of shape.
+- Normality seems not to be satisfied. There are lots of points which are not on the QQ plot.
+- The number of points who have high variances is low than previous models so no drastic changes in variance.
+- Cook’s Distance values are less than 0.5. Hence there are no influential points based on this criteria.
+
+- Let’s check Fitted vs. Studentized Resiudals and Leverage vs. Studentized Residuals plots.
+```{r}
+plot(fitted(fourth_model), rstudent(fourth_model))
+abline(h = c(-3, 3), lty = "dotted")
+```
+```{r}
+plot(hatvalues(fourth_model), rstudent(fourth_model))
+abline(v = c(2, 3) * (1 - df.residual(fourth_model) / nobs(fourth_model)), lty = "dotted")
+```
+- There are not any outliers that have effect on model we can say.
+Normality
+```{r}
+qqPlot(fourth_model)
+```
+
+```{r}
+shapiro.test(rstudent(fourth_model))
+```
+
+- We could not reject that residuals are normally distributed.
+
+```{r}
+ncvTest(fourth_model)
+```
+- We also could not reject that the variance is constant for this model.
+
+- Slicing the outlier data and having less data can cause of it.
+
+# 4
+```{r}
+anova(fourth_model)
+```
+
+-Based on the p-values, the significant main effects are as follows:
+-Edu (Education), I(Nwt^0.5), Jant, Rain, log(Nox)
+-These factors are statistically significant and have a meaningful impact on the response variable Mort (presumably mortality rates).
+
+# 5
+
+```{r}
+mort_transform %>%
+  relocate(Mort) %>%
+  ggpairs(progress = FALSE,
+          upper = list(continuous = my_fn),
+          lower = list(continuous = "cor"))+theme(axis.text.x = element_text(angle = 90))
+```
+- Edu-Rain, Jant-Nwt^0.5 might be interacting predictors. I try to discrete data and deeply looked to interaction plots. 
+```{r}
+ndisc <- 4
+d1_int <- d1 %>%
+  map(~{seq(min(.x), max(.x), len = ndisc)}) # discretization intervals
+
+d1_findInt <- map2(d1, d1_int, ~{
+  findInterval(x = .x, vec = .y, )
+}) # finds the discretization intervals into which each obs falls.
+
+d1_disc <- map2(d1_findInt, d1_int, ~{
+  .y[.x]
+})
+
+discretize <- function(x, breaks = 3){
+  ## dissect the numerical vector <x> into <breaks> intervals and replace each value
+  ## with the mid-point of the assigned interval. Alternatively breaks can be a
+  ## numerical vector of break points.
+  xx <- cut(x, breaks = unique(breaks), include.lowest = TRUE)
+  xxlevels <- levels(xx)
+  lreg <- gregexpr("(?<=[\\(\\[]).*(?=,)", xxlevels, perl = TRUE)
+  lb <- regmatches(xxlevels, lreg) %>% unlist() %>% as.numeric()
+  ureg <- gregexpr("(?<=,).*(?=\\])", xxlevels, perl = TRUE)
+  ub <- regmatches(xxlevels, ureg) %>% unlist() %>% as.numeric()
+  mid <- (lb + ub)/2
+  mid[as.numeric(xx)]
+}
+
+d1_disc <- map(d1, discretize, breaks = ndisc)
+map(d1_disc, table)  
+# d0 %>% head()
+# d0_disc %>% head()
+```
+
+```{r}
+d1_disc_df <- d1_disc %>% 
+  as_tibble %>% 
+  mutate(Mort = d1$Mort)%>% 
+  group_by_at(vars(-Mort)) %>% 
+  summarize(Mort = mean(Mort), .groups = "drop")
+```
+
+```{r}
+d1_disc_df %>% 
+  group_by(Edu, Rain) %>% 
+  summarize(Mort = mean(Mort)) %>% 
+  pivot_wider(names_from = Rain, values_from = Mort)
+```
+```{r}
+with(d1_disc_df,
+     interaction.plot(x.factor = Edu, trace.factor = Rain, response = Mort, type = "b")
+)
+
+with(d1_disc_df,
+     interaction.plot(x.factor = Rain, trace.factor = Edu, response = Mort, type = "b")
+)
+```
+- I couldnot find any interaction, lets try to find other interactions.
+
+```{r}
+d1_disc_df %>% 
+  group_by(Nwt, Jant) %>% 
+  summarize(Mort = mean(Mort)) %>% 
+  pivot_wider(names_from = Jant, values_from = Mort)
+```
+```{r}
+with(d1_disc_df,
+     interaction.plot(x.factor = Nwt^0.5, trace.factor = Jant, response = Mort, type = "b")
+)
+
+with(d1_disc_df,
+     interaction.plot(x.factor = Jant, trace.factor = Nwt^0.5, response = Mort, type = "b")
+)
+```
+- It is hard to tell there is an interaction between them so lets create a model and looked it.
+
+```{r}
+res1 <- update(fourth_model, . ~ . + Jant:I(Nwt^0.5))
+summary(res1)
+```
+- I think there is no interaction between them. Let's try the other relation.
+
+```{r}
+res2 <- update(fourth_model, . ~ . + Edu:Rain)
+summary(res2)
+```
+- Our model performance does not effected positively. So, their interaction also nonsignificant.
+
+```{r}
+predictorEffect("Edu", fourth_model, resid = TRUE) %>% plot()
+```
+```{r}
+predictorEffect("Rain", fourth_model, resid = TRUE) %>% plot()
+```
+```{r}
+predictorEffect("Jant", fourth_model, resid = TRUE) %>% plot()
+```
+
+# 6
+
+
+```{r}
+predict(
+    fourth_model,
+    newdata = data.frame(
+       Edu = 10, Nwt = 15, Jant = 35, Rain = 40, Nox = 2
+    ),
+    interval = "confidence",
+    level = 0.9
+  )
+```
