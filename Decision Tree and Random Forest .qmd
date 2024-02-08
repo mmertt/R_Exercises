@@ -1,0 +1,313 @@
+---
+title: "IE 451 Homework 7"
+author: "Mustafa Mert Türkmen"
+format: 
+  html:
+    embed-resources: true
+    toc: true
+editor: visual
+---
+
+## 8
+
+```{r}
+#| echo: false
+#| message: false
+library(ISLR2)
+library(tree)
+library(randomForest)
+library(tidyverse)
+library(car)
+library(rstatix)
+library(caret)
+```
+
+### 8.a
+
+```{r}
+set.seed(42)
+train <- sample(1: nrow(Carseats), nrow(Carseats)*3/4)
+```
+
+### 8.b
+
+```{r}
+tree.carseats <- tree(Sales ~ ., Carseats , subset = train)
+summary(tree.carseats)
+```
+
+```{r}
+plot(tree.carseats)
+text(tree.carseats , pretty = 0)
+```
+
+```{r}
+yhat <- predict(tree.carseats , newdata = Carseats[-train , ])
+carseats.test <- Carseats[-train, "Sales"]
+plot(yhat , carseats.test)
+abline (0, 1)
+```
+
+```{r}
+MSE <- mean (( yhat - carseats.test)^2)
+MSE
+```
+
+```{r}
+sqrt(MSE)
+```
+
+-   In other words, the test set MSE associated with the regression tree is 3.571. The square root of the MSE is therefore around 1.89, indicating that this model leads to test predictions that are (on average) within approximately 1.89 of the true sales value for the census tract.
+
+### 8.c
+
+```{r}
+cv.carseats <- cv.tree(tree.carseats)
+plot(cv.carseats$size , cv.carseats$dev, type = "b")
+```
+
+```{r}
+prune.carseats <- prune.tree(tree.carseats , best = 15)
+plot(prune.carseats)
+text(prune.carseats , pretty = 0)
+```
+
+```{r}
+yhat2 <- predict(prune.carseats , newdata = Carseats[-train , ])
+carseats.test <- Carseats[-train, "Sales"]
+plot(yhat , carseats.test)
+abline (0, 1)
+```
+
+```{r}
+MSE2 <- mean (( yhat2 - carseats.test)^2)
+MSE2
+```
+
+-   Pruning the tree improved the test MSE, we get lower mean square error.
+
+### 8.d
+
+```{r}
+set.seed (42)
+bag.carseats <- randomForest(Sales ~ ., data = Carseats , subset = train , mtry = 10, importance = TRUE)
+bag.carseats
+```
+
+```{r}
+yhat.bag <- predict(bag.carseats , newdata = Carseats[-train , ])
+MSE3 <- mean (( yhat.bag - carseats.test)^2)
+MSE3
+```
+
+- Bagging the tree improved the test MSE, we get lower mean square error.
+
+```{r}
+importance(bag.carseats)
+```
+
+```{r}
+varImpPlot(bag.carseats)
+```
+
+-   Two most important variables are ShelveLoc and Price.
+
+### 8.e
+- From important variables plot, I can guess optimal number of variables sampled at each split might be equal to 6 so I will try it.
+```{r}
+set.seed(42)
+rf.carseats <- randomForest(Sales ~ ., data = Carseats ,
+subset = train , mtry = 6, importance=TRUE)
+rf.carseats
+```
+```{r}
+yhat.rf <- predict(rf.carseats , newdata = Carseats[-train , ])
+MSE4 <- mean (( yhat.rf - carseats.test)^2)
+MSE4
+```
+
+
+- The test set MSE is 2.14; we obtain a higher test MSE than bagging (2.1).
+- When we use 6 variables at each node in random forest, it does not seem to have an positive effect.
+
+```{r}
+importance(rf.carseats)
+```
+
+
+```{r}
+varImpPlot(rf.carseats)
+```
+
+- ShelveLoc and Price are by far the two most important variables - the same important variables with bagging.
+
+
+## Homework 5 Redo
+
+```{r}
+d <- read_csv("used-cars.csv", show_col_types = FALSE) %>% 
+  select(Price, Age_08_04, KM, Fuel_Type, HP, Met_Color, Automatic, CC, Doors, Quarterly_Tax, Weight) %>% 
+  rename(Age = Age_08_04, 
+         Fuel = Fuel_Type,
+         Metallic = Met_Color,
+         QuartTax = Quarterly_Tax) %>% 
+  mutate(Fuel = factor(Fuel),
+         Metallic = factor(Metallic, levels = c(0,1), labels = c("No", "Yes")),
+         Automatic = factor(Automatic, levels = c(0,1), labels = c("No", "Yes")),
+         across(c(Doors, CC, HP, QuartTax), factor)
+         )
+```
+
+```{r}
+summary(d)
+```
+
+- I will investigate for any unfamiliar data in my dataset. 
+```{r}
+#| fig.asp: 1
+scatterplotMatrix(~ Price + Age + KM + Weight, d, regLine = FALSE, 
+                  smooth = list(spread = FALSE, col.smooth = "red", lty.smooth = "solid"), col = "gray",
+                  id = TRUE)  
+```
+
+```{r}
+Boxplot(Price ~ CC, d)
+Boxplot(Price ~ Age, d)
+```
+
+- I will eliminate the 16000 CC value, it looks like an mistake and also try to group data which are close to each other to fit a better model.
+
+```{r}
+usedcars <- d %>% 
+  mutate( HP = fct_collapse(HP,
+             `72` = c("69", "71", "72", "73"),
+             `86` = c("86", "90"),
+             `97`= c("97", "98"),
+             `112` = c("107", "110", "116", "192")),
+          CC = fct_collapse(CC,
+              `1300` = c("1300", "1332"),
+              `1400` = c("1398", "1400"),
+              `1600`= c("1587",  "1598",  "1600", "16000"),
+              `2000`= c("1800",  "1900",  "1975",  "1995",  "2000"))
+          )
+summary(usedcars)
+```
+
+### 1
+```{r}
+set.seed (42)
+train2 <- sample (1: nrow(usedcars), nrow(usedcars)*0.75)
+tree.usedcars <- tree(Price ~ ., usedcars , subset = train2)
+summary(tree.usedcars)
+```
+
+```{r}
+plot(tree.usedcars)
+text(tree.usedcars , pretty = 0)
+```
+```{r}
+yhat3 <- predict(tree.usedcars , newdata = usedcars[-train2, ])
+usedcars.test <- usedcars[-train2, "Price", -1]
+MSE5 <- mean((yhat3 - usedcars.test)^2)
+MSE5
+```
+
+```{r}
+sqrt(MSE5)
+```
+- The test set MSE associated with the regression tree is 2311362. The square root of the MSE is therefore around 1520.317, indicating that this model leads to test predictions that are (on average) within approximately \$1520 of the true price value for the census tract.
+
+- Not bad but maybe we can reduce MSE with.
+```{r}
+cv.usedcars <- cv.tree(tree.usedcars)
+plot(cv.usedcars$size , cv.usedcars$dev, type = "b")
+```
+- With looking this plot, I try to find the minimized deviance and it looked like on the size 8, so I cannot prune my tree, even if I did it will not reduce MSE.
+
+- Lets try to fit best random forest model.
+
+```{r}
+set.seed (42)
+bag.usedcars <- randomForest(Price ~ ., data = usedcars , subset = train2 , mtry = 10, importance = TRUE)
+bag.usedcars
+```
+```{r}
+yhat.bag2 <- predict(bag.usedcars , newdata = usedcars[-train2 , ])
+mean (( yhat.bag2 - usedcars.test)^2)
+```
+```{r}
+set.seed (42)
+rf.usedcars <- randomForest(Price ~ ., data = usedcars,
+subset = train , mtry = 5, importance = TRUE)
+yhat.rf2 <- predict(rf.usedcars, newdata = usedcars[-train2 , ])
+mean (( yhat.rf2 - usedcars.test)^2)
+```
+
+- Bagging the tree improved the test MSE, we get lower mean square error. However indicating m value lower, increase our MSE, so I will use randomForest model with mtry value 10.
+
+
+### 2
+```{r}
+prediction <- predict(
+    tree.usedcars,
+    newdata = data.frame(
+      Age = mean(usedcars$Age),
+      KM = mean(usedcars$KM),
+      Fuel = as.factor(get_mode(usedcars$Fuel)),
+      HP = as.factor(get_mode(usedcars$HP)),
+      CC = as.factor(get_mode(usedcars$CC)),
+      QuartTax = as.factor(get_mode(usedcars$QuartTax)),
+      Weight = mean(usedcars$Weight),
+      Metallic = as.factor(get_mode(usedcars$Metallic)),
+      Doors = as.factor(get_mode(usedcars$Doors)),
+      Automatic = as.factor(get_mode(usedcars$Automatic))
+    )
+)
+prediction
+```
+- The prediction value of decision tree model is equal to 10931.5.
+```{r}
+newdata <- data.frame(
+      Age = mean(usedcars$Age),
+      KM = mean(usedcars$KM),
+      Fuel = as.factor(get_mode(usedcars$Fuel)),
+      HP = as.factor(get_mode(usedcars$HP)),
+      CC = as.factor(get_mode(usedcars$CC)),
+      QuartTax = as.factor(get_mode(usedcars$QuartTax)),
+      Weight = mean(usedcars$Weight),
+      Metallic = as.factor(get_mode(usedcars$Metallic)),
+      Doors = as.factor(get_mode(usedcars$Doors)),
+      Automatic = as.factor(get_mode(usedcars$Automatic))
+    )
+```
+
+- prediction2 <- predict(
+    bag.usedcars,
+    newdata = newdata
+    )
+  )
+
+
+
+- I could not figure out my problem, I deeply look my newdata structure and bag.usedcars structure, and they looked as same to me. So, I could not show the predicted value of random forest.
+
+### 3
+```{r}
+ctrl <- trainControl(method = "cv", number = 10)
+
+lm_model <- train(Price ~ .+ Age:Fuel, data = usedcars, method = "lm", trControl = ctrl)
+
+tree_model <- train(Price ~ . , data = usedcars, method = "rpart", trControl = ctrl)
+
+rf_model <- train(Price ~ ., data = usedcars, method = "rf", trControl = ctrl)
+
+resampling_results <- resamples(list(
+  LM = lm_model,
+  Tree = tree_model,
+  RF = rf_model
+))
+
+summary(resampling_results)
+
+```
+- Linear model has 1287.55 RMSE, Decision Tree has 1732.75, and Random Forest has 1057.63 so with this results I will recommend the random forest model.
