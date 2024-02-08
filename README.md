@@ -29,5 +29,10 @@ Multiple regression model that predicts the used-car prices based on the followi
 
 ![image](https://github.com/mmertt/R_Exercises/assets/66298734/d3ea313e-2421-4695-aa18-bde0aa2a9afb)
 
-## Polution to Mortality and Pollution files
+## Pollution to Mortality and Pollution files
 Researchers at General Motors analyzed data on 56 US Standard Metropolitan Statistical Areas to study whether air pollution contributes to mortality. Multiple regression model that predicts air pollution effect on mortality.
+
+## Decision Tree, Random Forest Models with used-cars Files
+ISLR v2 
+Exercise 8 a, b, c, and e
+Decision Tree and Random Forest Models model that predict the used-car prices
