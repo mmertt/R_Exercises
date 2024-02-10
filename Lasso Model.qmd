@@ -1,0 +1,320 @@
+---
+title: "IE 451 Homework 7"
+author: "Mustafa Mert Türkmen"
+format: 
+  html:
+    embed-resources: true
+    toc: true
+editor: visual
+---
+```{r}
+#| echo: false
+#| message: false
+library(ISLR2)
+library(leaps)
+library(glmnet)
+```
+## 8
+
+
+### 8.a
+
+```{r}
+set.seed(1907)
+x <- rnorm(100)
+ep <- rnorm(100)
+```
+
+### 8.b
+
+```{r}
+y <- 24 + 3*x + 1*x^2 + 5*x^3 + ep
+```
+
+
+### 8.c
+
+```{r}
+df <- data.frame(x,y)
+reg <- regsubsets(y~poly(x,10,raw = TRUE, simple = TRUE), nvmax = 10, data = df)
+summary(reg)
+```
+```{r}
+cp_values <- summary(reg)$cp
+bic_values <- summary(reg)$bic
+adjr2_values <- summary(reg)$adjr2
+```
+
+```{r}
+min_cp_index <- which.min(cp_values)
+min_bic_index <- which.min(bic_values)
+max_adjr2_index <- which.max(adjr2_values)
+```
+
+
+```{r}
+par(mfrow = c(1, 3))
+plot(cp_values, main = "Cp Values", type = "l", col = "blue", lwd = 2)
+points(min_cp_index, cp_values[min_cp_index], col = "red", pch = 16)
+
+plot(bic_values, main = "BIC Values", type = "l", col = "green", lwd = 2)
+points(min_bic_index, bic_values[min_bic_index], col = "red", pch = 16)
+
+plot(adjr2_values, main = "Adjusted R^2 Values", type = "l", col = "purple", lwd = 2)
+points(max_adjr2_index, adjr2_values[max_adjr2_index], col = "red", pch = 16)
+```
+- With looking minimum Cp value and maximum AdjR2 values we can create a model with five variable.
+
+```{r}
+bic_values
+```
+- There is not much difference in bic_values at using 3 or 5 variable, so we can create best model with five variable according to these three parameters.
+
+```{r}
+coef(reg, id = 3)
+```
+- The coefficients as we would expect. 
+- Intercept is close to 24.05 which is very close the 24.
+- The model has contained X^1, X^2 and X^3, the values are close to our coefficients.
+
+### 8.d
+
+```{r}
+reg_forward <- regsubsets(y~poly(x,10,raw = TRUE, simple = TRUE), nvmax = 10, data = df, method='forward')
+summary(reg_forward)
+```
+
+```{r}
+cp_values_f <- summary(reg_forward)$cp
+bic_values_f <- summary(reg_forward)$bic
+adjr2_values_f <- summary(reg_forward)$adjr2
+```
+
+```{r}
+min_cp_index_f <- which.min(cp_values_f)
+min_bic_index_f <- which.min(bic_values_f)
+max_adjr2_index_f <- which.max(adjr2_values_f)
+```
+
+
+```{r}
+par(mfrow = c(1, 3))
+plot(cp_values_f, main = "Cp Values", type = "l", col = "blue", lwd = 2)
+points(min_cp_index_f, cp_values_f[min_cp_index_f], col = "red", pch = 16)
+
+plot(bic_values_f, main = "BIC Values", type = "l", col = "green", lwd = 2)
+points(min_bic_index_f, bic_values_f[min_bic_index_f], col = "red", pch = 16)
+
+plot(adjr2_values_f, main = "Adjusted R^2 Values", type = "l", col = "purple", lwd = 2)
+points(max_adjr2_index_f, adjr2_values_f[max_adjr2_index_f], col = "red", pch = 16)
+```
+
+- The forward stepwise selection is changed our best subset approach, looking minimum Cp value and maximum AdjR2 values we can create a model with six variable. We add one more variable with this method.
+
+```{r}
+bic_values_f
+```
+- The BIC value is not lowest on the six variable however with looking cp and adjr2 we can choose six variable model as best subset with method forward.
+
+```{r}
+coef(reg_forward, id = 6)
+```
+- Intercept is close to 24.27 which is very close the 24.
+- The model has contained X^1,X^2,X^3,X^4,X^6 and X^7.
+- The coefficients are not close as much as first method but the coef of X^6 and X^7 is close to zero.
+- I think BIC is better performed than other two evaluation method.
+
+```{r}
+reg_backward <- regsubsets(y~poly(x,10,raw = TRUE, simple = TRUE), nvmax = 10, data = df, method='backward')
+summary(reg_backward)
+```
+
+```{r}
+cp_values_b <- summary(reg_backward)$cp
+bic_values_b <- summary(reg_backward)$bic
+adjr2_values_b <- summary(reg_backward)$adjr2
+```
+
+```{r}
+min_cp_index_b <- which.min(cp_values_b)
+min_bic_index_b <- which.min(bic_values_b)
+max_adjr2_index_b <- which.max(adjr2_values_b)
+```
+
+
+```{r}
+par(mfrow = c(1, 3))
+plot(cp_values_b, main = "Cp Values", type = "l", col = "blue", lwd = 2)
+points(min_cp_index_b, cp_values_b[min_cp_index_b], col = "red", pch = 16)
+
+plot(bic_values_b, main = "BIC Values", type = "l", col = "green", lwd = 2)
+points(min_bic_index_b, bic_values_b[min_bic_index_b], col = "red", pch = 16)
+
+plot(adjr2_values_b, main = "Adjusted R^2 Values", type = "l", col = "purple", lwd = 2)
+points(max_adjr2_index_b, adjr2_values_b[max_adjr2_index_b], col = "red", pch = 16)
+```
+- The best subset suggested by backward selection is more consistent, because looking minimum Cp value, minimum BIC value and maximum AdjR2 values we can create a model with five variable. All of the values are on the same side right now. :)
+
+```{r}
+coef(reg_backward, id = 5)
+```
+- Intercept is close to 24.34 which is very close the 24.
+- The model has contained X^1,X^3,X^4,X^6 and X^7.
+- The coefficients are not close as much as first method also in the backward method.
+- The X^2's coef is equal to zero, not similar with our model. 
+- But the coef of X^6 and X^7 is close to zero.
+- I think best performing method was the first one, which is default mode of regsubsets function which is 'exhaustive'.
+
+### 8.e
+```{r}
+x_ten <- poly(x,10,raw = TRUE, simple = TRUE)
+lasso_model <- cv.glmnet(y=y,x=x_ten, alpha = 1)
+plot(lasso_model)
+```
+```{r}
+optimal_lambda <- lasso_model$lambda.min
+coefficients_lasso <- coef(lasso_model, s = optimal_lambda)
+coefficients_lasso
+```
+- We can see that the coefficients for X4 - X10 have been shrunk to exactly zero.
+- The coefficients for X - X3 are large, which makes sense as the generating function was an order 3 polynomial. 
+- The intercept and coefficients for X, X^2 and X^3 closely match the ones chosen in 8(b).
+- I chose 24, 3, 1, 5 respectively, lasso models results 25.17, 1.52, 0.26 and 5.06, which are very close values to mine.
+- Therefore, we can say that this model provides an accurate estimation of the response Y.
+
+### 8.f
+
+```{r}
+y1 <- 3 + 2*x^7 + ep
+```
+
+```{r}
+df1 <- data.frame(x,y1)
+reg1 <- regsubsets(y1~poly(x,10,raw = TRUE, simple = TRUE), nvmax = 10, data = df1)
+summary(reg1)
+```
+```{r}
+cp_values1 <- summary(reg1)$cp
+bic_values1 <- summary(reg1)$bic
+adjr2_values1 <- summary(reg1)$adjr2
+```
+
+```{r}
+min_cp_index1 <- which.min(cp_values1)
+min_bic_index1 <- which.min(bic_values1)
+max_adjr2_index1 <- which.max(adjr2_values1)
+```
+
+
+```{r}
+par(mfrow = c(1, 3))
+plot(cp_values1, main = "Cp Values", type = "l", col = "blue", lwd = 2)
+points(min_cp_index1, cp_values1[min_cp_index1], col = "red", pch = 16)
+
+plot(bic_values1, main = "BIC Values", type = "l", col = "green", lwd = 2)
+points(min_bic_index1, bic_values1[min_bic_index1], col = "red", pch = 16)
+
+plot(adjr2_values1, main = "Adjusted R^2 Values", type = "l", col = "purple", lwd = 2)
+points(max_adjr2_index1, adjr2_values1[max_adjr2_index1], col = "red", pch = 16)
+```
+- With looking minimum Cp value and minimum BIC values we can create a model with one variable.
+- The matrix from summary of regsubsets showing include X7 for single variable model. (same as our generated function)
+
+
+```{r}
+coef(reg1, id = 1)
+```
+- The coefficient as we would expect. 
+- Intercept is close to 3.08 which is very close the 3.
+- The model has contained X^7 and the value is so close to our coefficient which is 2.
+
+```{r}
+x_ten1 <- poly(x,10,raw = TRUE, simple = TRUE)
+lasso_model1 <- cv.glmnet(y=y1,x=x_ten1, alpha = 1)
+plot(lasso_model1)
+```
+```{r}
+optimal_lambda1 <- lasso_model1$lambda.min
+coefficients_lasso1 <- coef(lasso_model1, s = optimal_lambda1)
+coefficients_lasso1
+```
+- The coefficent as expected but the intercept point is not. 
+- Intercept is much higher than 3.
+- The model has contained X^7 and the value is so close to our coefficient which is 2.
+
+## 9
+### 9.a
+
+
+```{r}
+set.seed(1907)
+train_indices <- sample(1:nrow(College), nrow(College) * 0.75)
+train_set <- College[train_indices, ]
+test_set <- College[-train_indices, ]
+```
+
+### 9.b
+- The lm function used to perform least squares linear regression so I can use that.
+
+```{r}
+lm <- lm(Apps~., train_set)
+summary(lm)
+```
+
+```{r}
+pred <- predict(lm, newdata = test_set)
+test_error <- mean((pred - test_set$Apps)^2)
+test_error
+```
+### 9.c
+```{r}
+x_train <- model.matrix(Apps ~ ., data = train_set)
+y_train <- train_set$Apps
+x_test <- model.matrix(Apps ~ ., data = test_set)
+```
+
+
+```{r}
+ridge_model <- cv.glmnet(x_train,y_train, alpha = 0)
+ridge_model
+```
+
+```{r}
+lambda <- ridge_model$lambda.min
+lambda
+```
+
+```{r}
+ridge <- glmnet(x_train, y_train, alpha = 0, lambda = lambda)
+ridge_pred <- predict(ridge, s = lambda, newx = x_test)
+ridge_mse <- mean((ridge_pred - test_set$Apps)^2)
+ridge_mse
+```
+- Best value of lambda is 310.7218 and the test MSE is higher than for least squares.
+
+### 9.d
+- We chose alpha equals 1 to create lasso regression
+```{r}
+lasso_model <- cv.glmnet(x_train, y_train, alpha = 1) 
+```
+
+```{r}
+lasso_lambda <- lasso_model$lambda.min
+lasso_lambda
+```
+```{r}
+lasso <- glmnet(x_train, y_train, alpha = 1, lambda = lasso_lambda)
+lasso_pred <- predict(lasso, s=lasso_lambda, newx = x_test)
+lasso_mse <- mean((lasso_pred - test_set$Apps)^2)
+lasso_mse
+```
+- Best value of lambda is 11.69848 and the test MSE is higher than for least squares lower than ridge.
+
+```{r}
+nonzero_lasso <- sum(coef(lasso, s = lasso_lambda) != 0)
+nonzero_lasso
+```
+```{r}
+coef(lasso, s = lasso_lambda)
+```
+- The total number of the non-zero coefficients is 14 out of 19.
