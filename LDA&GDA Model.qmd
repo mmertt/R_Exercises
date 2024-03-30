@@ -1,0 +1,131 @@
+---
+title: "IE 451 Homework 10"
+author: "Mustafa Mert Türkmen"
+format: 
+  html:
+    embed-resources: true
+    toc: true
+editor: visual
+---
+```{r}
+#| echo: false
+#| message: false
+library(ISLR2)
+library(MASS)
+library(e1071)
+library(class)
+```
+## 12
+### 12.a
+$$
+\hat\beta_0 + \hat\beta_1x
+$$
+
+### 12.b
+$$
+(\hat\alpha_{orange0} - \hat\alpha_{apple0}) + (\hat\alpha_{orange1} - \hat\alpha_{apple1})x
+$$
+
+### 12.c
+
+$$
+\hat\alpha_{orange0} - \hat\alpha_{apple0} = 2
+$$
+and 
+
+$$
+\hat\alpha_{orange1} - \hat\alpha_{apple1} = -1
+$$
+
+### 12.d
+
+
+$$
+\hat\beta_0 = 1.2 - 3 = -1.8
+$$ 
+
+and
+
+$$
+\hat\beta_1 = -2 - 0.6 = -2.6
+$$
+
+### 12.e
+- While the models are related through the transformation, they are not identical, and the agreement between their predictions depends on how well the coefficients capture the underlying patterns in the data.
+
+## 14
+
+### 14.a
+```{r}
+x <- cbind(Auto[, -1], data.frame("mpg01" = Auto$mpg > median(Auto$mpg)))
+```
+
+### 14.b
+```{r}
+par(mfrow = c(2, 4))
+for (i in 1:7) boxplot(x[, i] ~ x$mpg01, main = colnames(x)[i])
+```
+- Most variables show a relation with mpg01 category. 
+- If mpg is above the median;
+  -   Cylinders generally 4
+  -   Displacement is lower than below median
+  -   Horsepower is lower than below median, kinda surprising
+  -   Horsepower is higher
+  -   They are generally new
+### 14.c
+```{r}
+set.seed(42)
+train <- sample(seq_len(nrow(x)), nrow(x) * 0.7)
+```
+
+### 14.d
+
+```{r}
+lda_model <- lda(mpg01 ~ cylinders + displacement + horsepower + weight + acceleration, data = x[train,])
+lda_predictions <- predict(lda_model, newdata = x[-train,])
+lda_error <- mean(lda_predictions$class !=  x[-train,]$mpg01)
+lda_error
+```
+
+### 14.e
+
+```{r}
+qda_model <- qda(mpg01 ~ cylinders + displacement + horsepower + weight + acceleration, data = x[train,])
+qda_predictions <- predict(qda_model, newdata = x[-train,])
+qda_error <- mean(qda_predictions$class !=  x[-train,]$mpg01)
+qda_error
+```
+### 14.f
+
+```{r}
+logit_model  <- glm(mpg01 ~ cylinders + displacement + horsepower + weight + acceleration, data = x[train, ], family = binomial)
+logit_predictions  <- predict(logit_model, x[-train, ], type = "response") > 0.5
+logit_error <- mean(logit_predictions != x[-train, ]$mpg01)
+logit_error
+```
+### 14.g
+
+```{r}
+nb_model <- naiveBayes(mpg01 ~ cylinders + displacement + horsepower + weight + acceleration, data = x[train, ])
+nb_predictions <- predict(nb_model, newdata = x[-train, ], type ="class")
+nb_error <- mean(nb_predictions != x[-train, ]$mpg01)
+nb_error
+```
+### 14.h
+
+```{r}
+knnplot <- sapply(1:50, function(k) {
+  knn_predictions <- knn(train = x[train, c("cylinders", "displacement", "horsepower", "weight", "acceleration")],
+                         test = x[-train, c("cylinders", "displacement", "horsepower", "weight", "acceleration")],
+                         cl = x$mpg01[train],
+                         k = k)
+  mean(knn_predictions != x[-train,]$mpg01)
+})
+names(knnplot) <- 1:50
+plot(knnplot, type = "o")
+knnplot[which.min(knnplot)]
+```
+
+- For knn, k = 19 appears to perform best. 
+- LDA and Logistic Regression has a lower error rate overall.
+- Changing the predictor variables might achieve lower error rate.
