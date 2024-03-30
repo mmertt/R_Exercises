@@ -40,3 +40,7 @@ Researchers at General Motors analyzed data on 56 US Standard Metropolitan Stati
 ## Lasso Model Files
 ISLR v2 
 Exercise 8 and Exercise 9 a, b, c, and d in Section 6.6 (pp. 285, 286)
+
+## LDA & QDA Model Files
+ISLR v2 
+Exercise 12 on page 192 and Exercise 14 on page 194 
