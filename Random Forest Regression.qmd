@@ -1,0 +1,222 @@
+---
+title: "IE 451 Homework 11"
+author: "Mustafa Mert Türkmen"
+format: 
+  html:
+    embed-resources: true
+    toc: true
+editor: visual
+---
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+library(ISLR2)
+library(MASS)
+library(e1071)
+library(class)
+library(randomForest)
+library(magrittr)
+library(glmnet)
+library(tidyverse)
+```
+
+## 14
+
+### 14.a
+```{r}
+x <- cbind(Auto[, -1], data.frame("mpg01" = Auto$mpg > median(Auto$mpg)))
+```
+
+
+### 14.b
+```{r}
+par(mfrow = c(2, 4))
+for (i in 1:7) boxplot(x[, i] ~ x$mpg01, main = colnames(x)[i])
+```
+- Most variables show a relation with mpg01 category. 
+- If mpg is above the median;
+  -   Cylinders generally 4
+  -   Displacement is lower than below median
+  -   Horsepower is lower than below median, kinda surprising
+  -   Horsepower is higher
+  -   They are generally new
+  
+### 14.c
+```{r}
+set.seed(42)
+train <- sample(seq_len(nrow(x)), nrow(x) * 0.7)
+```
+
+### 14.f
+
+```{r}
+logit_model  <- glm(mpg01 ~ cylinders + displacement + horsepower + weight + acceleration, data = x[train, ], family = binomial)
+logit_predictions  <- predict(logit_model, x[-train, ], type = "response") > 0.5
+logit_error <- mean(logit_predictions != x[-train, ]$mpg01)
+logit_error
+```
+```{r}
+#| fig.asp: 1
+roc_df_logit <- x[train, ] %>% 
+  select(mpg01) %>%
+  mutate(prob = predict(logit_model, type = "response" )) %>%
+  arrange(desc(prob)) %>% 
+  mutate(TP = cumsum(ifelse(mpg01 == 1, 1, 0)),
+         FP = cumsum(ifelse(mpg01 == 0, 1, 0)),
+         TPR = TP / sum(mpg01 == 1),
+         FPR = FP / sum(mpg01 == 0))
+
+roc_df_logit %>% 
+  ggplot(aes(FPR, TPR)) +
+  geom_point() +
+  geom_hline(yintercept = c(0, 1), lty = "dashed") +
+  geom_vline(xintercept = c(0, 1), lty = "dashed") +
+  geom_abline(lty = "dashed") +
+  labs(title = "ROC Curve",
+       x = "False Positive Rate",
+       y = "True Positive Rate")
+```
+```{r}
+#| warning: false
+roc_df_logit %>% summary
+roc_logit <- approxfun(roc_df_logit$FPR, roc_df_logit$TPR)
+curve(roc_logit)
+roc_logit(0.001)
+integrate(roc_logit, 0.0001, 1)$value
+```
+- The AUC for logistic regression is 0.951224
+
+### Random Forest
+
+```{r}
+rf_model <- randomForest(factor(mpg01) ~ cylinders + displacement + horsepower + weight + acceleration + year,
+                          data = x[train, ])
+rf_pred <- predict(rf_model, newdata =  x[-train, ])
+rf_error <- mean(rf_pred != x[-train, ]$mpg01)
+rf_error
+```
+```{r}
+#| fig.asp: 1
+roc_df_rf <- x[train, ] %>% 
+  select(mpg01) %>%
+  mutate(prob = predict(rf_model, type = "response" )) %>%
+  arrange(desc(prob)) %>% 
+  mutate(TP = cumsum(ifelse(mpg01 == 1, 1, 0)),
+         FP = cumsum(ifelse(mpg01 == 0, 1, 0)),
+         TPR = TP / sum(mpg01 == 1),
+         FPR = FP / sum(mpg01 == 0))
+
+roc_df_rf %>% 
+  ggplot(aes(FPR, TPR)) +
+  geom_point() +
+  geom_hline(yintercept = c(0, 1), lty = "dashed") +
+  geom_vline(xintercept = c(0, 1), lty = "dashed") +
+  geom_abline(lty = "dashed") +
+  labs(title = "ROC Curve",
+       x = "False Positive Rate",
+       y = "True Positive Rate")
+```
+```{r}
+#| warning: false
+roc_df_rf %>% summary
+roc_rf <- approxfun(roc_df_rf$FPR, roc_df_rf$TPR)
+curve(roc_rf)
+roc_rf(0.001)
+integrate(roc_logit, 0.0001, 1)$value
+integrate(roc_rf, 0.0001, 1)$value
+```
+- Random forest AUC = 0.96295 which is higher than logit AUC
+- Based on AUC, Random forest is better than logistic regression.
+
+### Lasso Logistic Regression
+
+```{r}
+lasso.mod <- cv.glmnet(as.matrix(x[train,][,-c(8,9)]),x[train, ]$mpg01,alpha=1)
+lasso_pred <- predict(lasso.mod, s = "lambda.min", newx = as.matrix(x[-train, ][, -c(8,9)]))
+lasso_pred_binary <- ifelse(lasso_pred > 0.5, 1, 0)
+lasso_error <- mean(lasso_pred_binary != x[-train, ]$mpg01)
+lasso_error
+```
+```{r}
+#| fig.asp: 1
+roc_df_lasso <- x[train, ] %>%
+  select(mpg01) %>%
+  mutate(prob = predict(lasso.mod, newx = as.matrix(x[train, ][, -c(8, 9)]), type = "response")) %>%
+  arrange(desc(prob)) %>%
+  mutate(TP = cumsum(ifelse(mpg01 == 1, 1, 0)),
+         FP = cumsum(ifelse(mpg01 == 0, 1, 0)),
+         TPR = TP / sum(mpg01 == 1),
+         FPR = FP / sum(mpg01 == 0))
+
+roc_df_lasso %>%
+  ggplot(aes(FPR, TPR)) +
+  geom_point() +
+  geom_hline(yintercept = c(0, 1), lty = "dashed") +
+  geom_vline(xintercept = c(0, 1), lty = "dashed") +
+  geom_abline(lty = "dashed") +
+  labs(title = "ROC Curve",
+       x = "False Positive Rate",
+       y = "True Positive Rate")
+```
+
+```{r}
+#| warning: false
+roc_df_lasso %>% summary
+roc_lasso <- approxfun(roc_df_lasso$FPR, roc_df_lasso$TPR)
+curve(roc_lasso)
+roc_lasso(0.001)
+integrate(roc_logit, 0.0001, 1)$value
+integrate(roc_rf, 0.0001, 1)$value
+integrate(roc_lasso, 0.0001, 1)$value
+```
+- Lasso reg AUC = 0.960545 which is higher than logit AUC
+- Based on AUC, Random forest is better than lasso regression.
+
+
+### Ridge Logistic Regression
+
+```{r}
+ridge.mod <- cv.glmnet(as.matrix(x[train,][,-c(8,9)]),x[train, ]$mpg01,alpha=0)
+ridge_pred <- predict(ridge.mod, s = "lambda.min", newx = as.matrix(x[-train, ][, -c(8,9)]))
+ridge_pred_binary <- ifelse(ridge_pred > 0.5, 1, 0)
+ridge_error <- mean(ridge_pred_binary != x[-train, ]$mpg01)
+ridge_error
+```
+```{r}
+#| fig.asp: 1
+roc_df_ridge <- x[train, ] %>%
+  select(mpg01) %>%
+  mutate(prob = predict(ridge.mod, newx = as.matrix(x[train, ][, -c(8, 9)]), type = "response")) %>%
+  arrange(desc(prob)) %>%
+  mutate(TP = cumsum(ifelse(mpg01 == 1, 1, 0)),
+         FP = cumsum(ifelse(mpg01 == 0, 1, 0)),
+         TPR = TP / sum(mpg01 == 1),
+         FPR = FP / sum(mpg01 == 0))
+
+roc_df_ridge %>%
+  ggplot(aes(FPR, TPR)) +
+  geom_point() +
+  geom_hline(yintercept = c(0, 1), lty = "dashed") +
+  geom_vline(xintercept = c(0, 1), lty = "dashed") +
+  geom_abline(lty = "dashed") +
+  labs(title = "ROC Curve",
+       x = "False Positive Rate",
+       y = "True Positive Rate")
+```
+
+```{r}
+#| warning: false
+roc_df_ridge %>% summary
+roc_ridge <- approxfun(roc_df_ridge$FPR, roc_df_ridge$TPR)
+curve(roc_ridge)
+roc_ridge(0.001)
+integrate(roc_logit, 0.0001, 1)$value
+integrate(roc_rf, 0.0001, 1)$value
+integrate(roc_lasso, 0.0001, 1)$value
+integrate(roc_ridge, 0.0001, 1)$value
+```
+- Lasso reg AUC = 0.9564662 which is higher than logit AUC
+- Based on AUC, Random forest is better than ridge regression also.
+
+- I would choose the Random Forest model based on its superior performance in terms of both AUC scores and ROC curves. The Random Forest model consistently demonstrated higher AUC values, indicating better overall predictive ability compared to the other models.
