@@ -44,3 +44,13 @@ Exercise 8 and Exercise 9 a, b, c, and d in Section 6.6 (pp. 285, 286)
 ## LDA & QDA Model Files
 ISLR v2 
 Exercise 12 on page 192 and Exercise 14 on page 194 
+
+## Random Forest Regression Files
+ISLR v2
+Exercise 14 a, b, c, f on page 194. Also fitted
+- random forest
+- lasso logistic regression
+- ridge logistic regression
+models.
+Plotted ROC curves on the same coordinate system.
+Calculated AUC.
